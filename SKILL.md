@@ -1,43 +1,31 @@
 ---
 name: install-skills-registries
-description: "Install agent skills from external registries (ClawHub, skills.sh, OpenClaw) into Hermes. Registries hand out `openclaw skills install` commands or redirect to GitHub; Hermes needs a raw SKILL.md URL instead. Use when the user links a skill from clawhub.ai or skills.sh and wants it installed in Hermes."
-version: 1.0.0
-author: Community
-license: MIT
-platforms: [linux, macos, windows]
-tags: [general]
+description: Install agent skills from external registries (ClawHub, skills.sh, OpenClaw) into Hermes. Registries hand out `openclaw skills install` commands or redirect to GitHub; Hermes needs a raw SKILL.md URL instead. Use when the user links a skill from clawhub.ai or skills.sh and wants it installed in Hermes.
 ---
 
-# Install Skills Registries — Skill
+# Install Skills from External Registries into Hermes
 
-Install agent skills from external registries (ClawHub, skills.sh, OpenClaw) into Hermes. Registries hand out `openclaw skills install` commands or redirect to GitHub; Hermes needs a raw SKILL.md URL instead. Use when the user links a skill from clawhub.ai or skills.sh and wants it installed in Hermes.
+## Key fact
+Hermes install takes a direct URL to a SKILL.md file (or `user/repo/path`):
+`hermes skills install "<raw-url>/SKILL.md" --name <name> --force --yes`
+Registries like ClawHub show `openclaw skills install @user/skill` (OpenClaw format) — that does NOT run in Hermes. Convert to a raw GitHub URL.
+
+## Find the raw SKILL.md URL
+Both clawhub.ai and skills.sh ultimately point at GitHub repos.
+1. ClawHub skill page → copy the install command, extract `@owner/skill`.
+2. Resolve the raw path via GitHub API tree:
+   `curl "https://api.github.com/repos/<owner>/<repo>/git/trees/main?recursive=1" | grep SKILL.md`
+3. Common layouts observed:
+   - `vercel-labs/skills` → `skills/<name>/SKILL.md`
+   - `vercel-labs/agent-skills` → `skills/<name>/SKILL.md`
+   - `anthropics/skills` → `skills/<name>/SKILL.md`
+4. Raw URL: `https://raw.githubusercontent.com/<owner>/<repo>/main/<path>/SKILL.md`
 
 ## Install
+`hermes skills install "https://raw.githubusercontent.com/<owner>/<repo>/main/<path>/SKILL.md" --name <name> --force --yes`
 
-```bash
-cp -r <skill-name> ~/.hermes/skills/<skill-path>/
-```
-
-Or clone this repository:
-
-```bash
-git clone https://github.com/iizcm/install-skills-registries-skill.git ~/.hermes/skills/<skill-path>/
-```
-
-## Usage
-
-Invoke your AI agent with a clear instruction matching this skill's purpose. The agent will route tasks to this skill when the instruction matches its description or trigger keywords.
-
-Refer to `README.md` in this repository for:
-- Detailed step-by-step installation guide
-- Bilingual documentation (English + Indonesian)
-- Troubleshooting table
-- Security best practices
-- Customization tips
-
-## Safety rules
-
-- Never commit private keys, seed phrases, API tokens, or personal data to version control
-- Use placeholders (`<YOUR_...>`) in all examples and code snippets
-- Validate all outputs before acting on them
-- Keep real credentials in your runtime's secure credential store only
+## Pitfalls
+- skills.sh pages 308-redirect to `www.skills.sh` and then to `github.com/<org>/skills` — follow to GitHub, don't scrape the HTML.
+- Branch may be `main` not `master`; confirm via `api.github.com/repos/<owner>/<repo>` → `default_branch`.
+- If Hermes rejects the SKILL.md (no `name:` frontmatter), pass `--name <fallback>`.
+- Skills installed this way show as `url / community` in `hermes skills list` — that's expected.
